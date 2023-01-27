@@ -8,10 +8,10 @@
     <h1>CF Worker and DO Clocks Tests</h1>
     <div>
       <p>
-        This page demonstrates that a CloudFlare durable-object's clock loses 
+        This page demonstrates that a Cloudflare durable-object's clock loses 
         time across requests, and that the more computation work the 
         durable-object does, the more time it loses.  It also demonstrates that 
-        a CloudFlare worker's clock does not lose time in this way.
+        a Cloudflare worker's clock does not lose time in this way.
       </p>
       <p>
         This page logs information about the delta between its clock and the 
@@ -45,7 +45,7 @@
         </ol>
       </p>
       <p>
-        Note that for all the cases the round trip time remains steady.
+        Note that for all these cases the round trip time remains steady.
         For the worker-post test case, the delta between the page and server 
         timestamps also remains steady, showing no time loss.
         However, for both do-post and do-websocket, the delta between the page 
