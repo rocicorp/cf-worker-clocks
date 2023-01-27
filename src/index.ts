@@ -1,3 +1,5 @@
+import indexHTML from "index.html";
+
 export interface Env {
   clocksTestDO: DurableObjectNamespace;
 }
@@ -8,33 +10,28 @@ const worker = {
     env: Env,
     ctx: ExecutionContext
   ): Promise<Response> {
-    const resp = await innerFetch(request, env, ctx);
-    const respWithAllowAllCORS = new Response(resp.body, resp);
-    respWithAllowAllCORS.headers.set("Access-Control-Allow-Origin", "*");
-    return respWithAllowAllCORS;
+    const url = new URL(request.url);
+    const forward = () => {
+      return env.clocksTestDO
+        .get(env.clocksTestDO.idFromName("clock-tests-singleton"))
+        .fetch(request);
+    };
+    switch (url.pathname) {
+      case "/":
+        return new Response(indexHTML, {
+          headers: {
+            "content-type": "text/html;charset=UTF-8",
+          },
+        });
+      case "/worker-post":
+        return handlePost(request, ctx);
+      case "/do-post":
+      case "/do-websocket":
+        return forward();
+    }
+    return new Response("Not Found", { status: 404 });
   },
 };
-
-async function innerFetch(
-  request: Request,
-  env: Env,
-  ctx: ExecutionContext
-): Promise<Response> {
-  const url = new URL(request.url);
-  const forward = () => {
-    return env.clocksTestDO
-      .get(env.clocksTestDO.idFromName("clock-tests-singleton"))
-      .fetch(request);
-  };
-  switch (url.pathname) {
-    case "/worker-post":
-      return handlePost(request, ctx);
-    case "/do-post":
-    case "/do-websocket":
-      return forward();
-  }
-  return new Response("Not Found", { status: 404 });
-}
 
 class ClocksTestDO implements DurableObject {
   async fetch(request: Request): Promise<Response> {
@@ -91,9 +88,7 @@ async function handleWebSocketConnect(request: Request): Promise<Response> {
 function doWork(work: number) {
   let result = 1;
   for (let i = 0; i < work; i++) {
-    for (let j = 0; j < work; j++) {
-      result = result + i * j + crypto.randomUUID().length;
-    }
+    result = result + i * i + crypto.randomUUID().length;
   }
   return result;
 }

@@ -14,13 +14,15 @@
         a CloudFlare worker's clock does not lose time in this way.
       </p>
       <p>
-        This page logs information about the delta between its clock and clock 
-        of a Cloudflare worker or durable-object. It has three test cases.
+        This page logs information about the delta between its clock and the 
+        clock of a Cloudflare worker or durable-object as observed over a 
+        series of requests. It has three test cases.
         In each test case the page sends its current time as reported by 
         Date.now() every 250ms to a worker (which depending on the test case
         may forward it to a durable-object).  The worker or durable-object 
         responds with an array containing the timestamp it received from this 
-        page and its current time as reported by Date.now().  This page then 
+        page and its current time as reported by Date.now(), and starts 
+        a configurable amount of async computation work.  This page then 
         logs the round trip time and the delta between the page and server 
         timestamps.  
       </p> 
@@ -47,11 +49,9 @@
         For the worker-post test case, the delta between the page and server 
         timestamps also remains steady, showing no time loss.
         However, for both do-post and do-websocket, the delta between the page 
-        and server timestamps becomes smaller over time showing time loss on
-        the durable-object.  When these durable-object tests increasing the work
-        param (causing the durable-object to do more computation per request)
-        increases the rate of time loss (the worker-post test does not
-        show time loss even with a high work param value).
+        and server timestamps becomes smaller over time showing time loss.  
+        Increasing the work (i.e. computation) done per request increases the 
+        rate of time loss.
       </p>
     </div>
     <div>
@@ -77,14 +77,14 @@
         <p>Select work per request/message:</p>
         <input type="radio" id="work-0" name="work" value="0" />
         <label for="work-0">0</label>
-        <input type="radio" id="work-50" name="work" value="50" />
-        <label for="work-50">50</label>
         <input type="radio" id="work-100" name="work" value="100" />
         <label for="work-100">100</label>
-
-        <p>Select worker host:</p>
-        <input type="text" id="workerhost" name="workerhost" />
-        <label for="work">Host</label>
+        <input type="radio" id="work-1000" name="work" value="1000" />
+        <label for="work-1000">1000</label>
+        <input type="radio" id="work-10000" name="work" value="10000" />
+        <label for="work-10000">10000</label>
+        <input type="radio" id="work-100000" name="work" value="100000" />
+        <label for="work-100000">100000</label>
 
         <p></p>
         <br /><input type="submit" value="Submit" />
@@ -94,20 +94,17 @@
     <pre id="log"></pre>
 
     <script>
-      const DEFAULT_WORKER_HOST = "http://localhost:8787";
       const DEFAULT_TEST_CASE = "worker-post";
       const DEFAULT_WORK = 0;
-      const MAX_ITERATIONS = 500;
+      const MAX_ITERATIONS = 100;
 
       const params = new URL(location.href).searchParams;
-      const workerHost = params.get("workerhost") ?? DEFAULT_WORKER_HOST;
       const testCase = params.get("test") ?? DEFAULT_TEST_CASE;
       const work = params.get("work") ?? DEFAULT_WORK;
       const intervalMs = 250;
 
       document.getElementById(`test-${testCase}`).checked = true;
       document.getElementById(`work-${work}`).checked = true;
-      document.getElementById("workerhost").value = workerHost;
 
       const logDiv = document.getElementById("log");
       function log(...msgParts) {
@@ -138,12 +135,11 @@
         );
       }
       function testDoWebSocket() {
-        const url = new URL(workerHost);
-        console.log(url.protocol);
-        url.protocol = url.protocol === "https:" ? "wss" : "ws";
-        url.pathname = "/do-websocket";
-        const { searchParams } = url;
-        searchParams.set("work", work);
+        const url = new URL(location.href);
+        url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+        url.pathname = `/do-websocket`;
+        url.search = '';
+        url.searchParams.set("work", work);
         const ws = new WebSocket(url.toString());
         ws.addEventListener("message", async (e) => {
           if (e.data === "connected") {
@@ -167,10 +163,10 @@
       }
 
       function testPost() {
-        const url = new URL(workerHost);
-        url.pathname = "/" + testCase;
-        const { searchParams } = url;
-        searchParams.set("work", work);
+        const url = new URL(location.href);
+        url.pathname = `/${testCase}`;
+        url.search = '';
+        url.searchParams.set("work", work);
         let i = 0;
         const intervalID = setInterval(async () => {
           i++;
