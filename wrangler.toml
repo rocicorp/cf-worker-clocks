@@ -11,5 +11,3 @@ bindings = [
 tag = "v1"
 new_classes = ["ClocksTestDO"]
 
-#[secrets]
-#DATADOG_API_KEY
