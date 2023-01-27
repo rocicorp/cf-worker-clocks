@@ -12,6 +12,9 @@
 /.next/
 /out/
 
+# parcel
+.parcel-cache/
+
 # production
 /dist
 
@@ -30,8 +33,6 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# vercel
-.vercel
 
 $ CloudFlare worker
 .mf/
