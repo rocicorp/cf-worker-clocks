@@ -114,26 +114,33 @@
         logDiv.prepend(msgDiv);
       }
 
-      function logTiming(timestampData) {
+      function logResponse(responseData) {
         const now = Date.now();
-        const iteration = timestampData[0]
-        const pageTimestamp = timestampData[1];
-        const serverTimestamp = timestampData[2];
+        const {i, pageTimestamp, serverTimestamp, serverID} = responseData;
         log(
           testCase,
-          iteration.toString().padStart(4),
-          "now",
+          "| serverID",
+          serverID,
+          "| i",
+          i.toString().padStart(3),
+          "| now",
           now,
-          "pageTimestamp",
+          "| pageTimestamp",
           pageTimestamp,
-          "serverTimestamp",
+          "| serverTimestamp",
           serverTimestamp,
-          "now - pageTimestamp (round trip)",
+          "| now - pageTimestamp (round trip)",
           (now - pageTimestamp).toString().padStart(5),
-          "serverTimestamp - pageTimestamp",
-          (serverTimestamp - pageTimestamp).toString().padStart(5)
+          "| serverTimestamp - pageTimestamp",
+          (serverTimestamp - pageTimestamp).toString().padStart(5),
+          "|"
         );
       }
+  
+      function createRequestBody(i, pageTimestamp) {
+        return JSON.stringify({ i, pageTimestamp });
+      }
+      
       function testDoWebSocket() {
         const url = new URL(location.href);
         url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
@@ -151,10 +158,10 @@
                 clearInterval(intervalID);
                 return;
               }
-              ws.send(JSON.stringify([i, Date.now()]));
+              ws.send(createRequestBody(i, Date.now()));
             }, intervalMs);
           } else if (typeof e.data === "string") {
-            logTiming(JSON.parse(e.data));
+            logResponse(JSON.parse(e.data));
           }
         });
         ws.addEventListener("close", async (e) => {
@@ -178,10 +185,10 @@
           const response = await fetch(
             new Request(url.toString(), {
               method: "post",
-              body: JSON.stringify([i, Date.now()]),
+              body: createRequestBody(i, Date.now()),
             })
           );
-          logTiming(await response.json());
+          logResponse(await response.json());
         }, intervalMs);
       }
 
