@@ -1,6 +1,10 @@
-name = "cf-worker-clocks-test"
+name = "cf-worker-clocks-test-w-service-bindings"
 main = "src/index.ts"
 compatibility_date = "2022-06-03"
+
+services = [
+  { binding = "clockWorker", service = "cf-worker-clocks-test-w-service-bindings" }
+]
 
 [durable_objects]
 bindings = [
