@@ -16,7 +16,7 @@
       <p>
         This page logs information about the delta between its clock and the 
         clock of a Cloudflare worker or durable-object as observed over a 
-        series of requests. It has three test cases.
+        series of requests. It has four test cases.
         In each test case the page sends its current time as reported by 
         Date.now() every 250ms to a worker (which depending on the test case
         may forward it to a durable-object).  The worker or durable-object 
@@ -41,6 +41,11 @@
             <b>do-websocket:</b> time is sent via a WebSocket message which
             is responded to by the durable-object via a Websocket message with 
             the durable-object's time.
+          </li>
+          <li>
+            <b>do-worker-post:</b> time is sent via a POST request which is responded 
+            to by the durable-object with a timestamp it fetches from the worker 
+            over a service binding.  The work computation is done on the do.
           </li>
         </ol>
       </p>
@@ -73,6 +78,13 @@
           value="do-websocket"
         />
         <label for="do-websocket">do-websocket</label>
+        <input
+          type="radio"
+          id="test-do-worker-post"
+          name="test"
+          value="do-worker-post"
+        />
+        <label for="do-worker-post">do-worker-post</label>
 
         <p>Select work per request/message:</p>
         <input type="radio" id="work-0" name="work" value="0" />
@@ -195,6 +207,7 @@
       switch (testCase) {
         case "worker-post":
         case "do-post":
+        case "do-worker-post":
           testPost();
           break;
         case "do-websocket":

@@ -2,6 +2,7 @@ import indexHTML from "index.html";
 
 export interface Env {
   clocksTestDO: DurableObjectNamespace;
+  clockWorker: Fetcher;
 }
 
 const worker = {
@@ -15,6 +16,7 @@ const worker = {
       workerID = crypto.randomUUID();
       globalThis.workerID = workerID;
     }
+    console.log(workerID, "worker clockWorker", env.clockWorker);
     const url = new URL(request.url);
     const forward = () => {
       return env.clocksTestDO
@@ -28,9 +30,12 @@ const worker = {
             "content-type": "text/html;charset=UTF-8",
           },
         });
+      case "/now":
+        return new Response(JSON.stringify({ id: workerID, now: Date.now() }));
       case "/worker-post":
-        return handlePost(request, workerID, ctx);
+        return handlePost(request, workerID, Date.now(), ctx);
       case "/do-post":
+      case "/do-worker-post":
       case "/do-websocket":
         return forward();
     }
@@ -40,16 +45,24 @@ const worker = {
 
 class ClocksTestDO implements DurableObject {
   private readonly _doID: string;
+  private readonly _env: Env;
 
-  constructor() {
+  constructor(_state: DurableObjectState, env: Env) {
+    this._env = env;
     this._doID = crypto.randomUUID();
   }
 
   async fetch(request: Request): Promise<Response> {
+    console.log(this._doID, "DO clockWorker", this._env.clockWorker);
     const url = new URL(request.url);
     switch (url.pathname) {
+      case "/do-worker-post":
+        const { id, now } = await (
+          await this._env.clockWorker.fetch("https://unused/now")
+        ).json<{ id: string; now: number }>();
+        return handlePost(request, this._doID + "/" + id, now);
       case "/do-post":
-        return handlePost(request, this._doID);
+        return handlePost(request, this._doID, Date.now());
       case "/do-websocket":
         return handleWebSocketConnect(request, this._doID);
     }
@@ -60,6 +73,7 @@ class ClocksTestDO implements DurableObject {
 async function handlePost(
   request: Request,
   serverID: string,
+  now: number,
   ctx?: ExecutionContext
 ): Promise<Response> {
   const url = new URL(request.url);
@@ -79,9 +93,7 @@ async function handlePost(
   } else {
     setTimeout(() => doWork(work), 1);
   }
-  return new Response(
-    createResponseBody(serverID, i, pageTimestamp, Date.now())
-  );
+  return new Response(createResponseBody(serverID, i, pageTimestamp, now));
 }
 
 async function handleWebSocketConnect(
