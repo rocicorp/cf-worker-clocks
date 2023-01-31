@@ -36,6 +36,7 @@ const worker = {
         return handlePost(request, workerID, Date.now(), ctx);
       case "/do-post":
       case "/do-worker-post":
+      case "/do-worker-internet-post":
       case "/do-websocket":
         return forward();
     }
@@ -56,11 +57,23 @@ class ClocksTestDO implements DurableObject {
     console.log(this._doID, "DO clockWorker", this._env.clockWorker);
     const url = new URL(request.url);
     switch (url.pathname) {
-      case "/do-worker-post":
+      case "/do-worker-post": {
         const { id, now } = await (
           await this._env.clockWorker.fetch("https://unused/now")
         ).json<{ id: string; now: number }>();
         return handlePost(request, this._doID + "/" + id, now);
+      }
+      case "/do-worker-internet-post": {
+        const response = await fetch(
+          "https://cf-worker-clocks-test-w-service-bindings.replicache.workers.dev/now"
+        );
+        console.log(response.status, response.statusText);
+        if (response.status !== 200) {
+          return new Response(response.statusText, response);
+        }
+        const { id, now } = await response.json<{ id: string; now: number }>();
+        return handlePost(request, this._doID + "/" + id, now);
+      }
       case "/do-post":
         return handlePost(request, this._doID, Date.now());
       case "/do-websocket":

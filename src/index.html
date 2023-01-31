@@ -47,6 +47,11 @@
             to by the durable-object with a timestamp it fetches from the worker 
             over a service binding.  The work computation is done on the do.
           </li>
+          <li>
+            <b>do-worker-internet-post:</b> time is sent via a POST request which is responded 
+            to by the durable-object with a timestamp it fetches from the worker 
+            by url using internet routing.  The work computation is done on the do.
+          </li>
         </ol>
       </p>
       <p>
@@ -84,7 +89,14 @@
           name="test"
           value="do-worker-post"
         />
-        <label for="do-worker-post">do-worker-post</label>
+        <label for="do-worker-internet-post">do-worker-post</label>
+        <input
+          type="radio"
+          id="test-do-worker-internet-post"
+          name="test"
+          value="do-worker-internet-post"
+        />
+        <label for="do-worker-internet-post">do-worker-internet-post</label>
 
         <p>Select work per request/message:</p>
         <input type="radio" id="work-0" name="work" value="0" />
@@ -208,6 +220,7 @@
         case "worker-post":
         case "do-post":
         case "do-worker-post":
+        case "do-worker-internet-post":
           testPost();
           break;
         case "do-websocket":
